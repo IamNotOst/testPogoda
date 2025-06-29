@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WeatherSphere - Умный прогноз погоды</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #6C63FF;
+            --secondary-color: #4D44DB;
+            --accent-color: #FF6584;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B8B8B8;
+            --bg-primary: #121212;
+            --bg-secondary: #1E1E1E;
+            --bg-tertiary: #2D2D2D;
+            --card-bg: rgba(30, 30, 30, 0.7);
+            --error-color: #FF4D4D;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --border-radius: 16px;
+            --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(108, 99, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 101, 132, 0.1) 0%, transparent 20%);
+            background-attachment: fixed;
+        }
+
+        /* Основной контейнер */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        /* Шапка приложения */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            color: var(--primary-color);
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            padding: 8px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        /* Поисковая строка */
+        .search-container {
+            position: relative;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 18px 60px 18px 24px;
+            border-radius: var(--border-radius);
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 16px;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .search-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 18px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 15px rgba(108, 99, 255, 0.4);
+        }
+
+        .search-btn:active {
+            transform: translateY(-50%) scale(0.98);
+        }
+
+        /* Основное содержимое */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 20px;
+        }
+
+        /* Текущая погода */
+        .current-weather {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .current-weather::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(108, 99, 255, 0.1) 0%, transparent 70%);
+            z-index: -1;
+        }
+
+        .location-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .city-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .date-time {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .current-weather-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .weather-icon-temp {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .weather-icon {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+
+        .current-temp {
+            font-size: 72px;
+            font-weight: 300;
+            line-height: 1;
+        }
+
+        .temp-unit {
+            font-size: 32px;
+            vertical-align: super;
+            margin-left: 4px;
+            opacity: 0.7;
+        }
+
+        .weather-details {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: right;
+        }
+
+        .weather-description {
+            font-size: 20px;
+            text-transform: capitalize;
+            color: var(--text-secondary);
+        }
+
+        .feels-like {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        .weather-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .weather-stat {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .weather-stat:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Прогноз на несколько дней */
+        .daily-forecast {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--primary-color);
+        }
+
+        .daily-items {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding-bottom: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--bg-secondary);
+        }
+
+        .daily-items::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .daily-items::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        .daily-items::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+
+        .daily-item {
+            min-width: 120px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .daily-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .day-name {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .daily-icon {
+            width: 50px;
+            height: 50px;
+            margin: 5px 0;
+        }
+
+        .daily-temp {
+            display: flex;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .max-temp {
+            font-weight: 600;
+        }
+
+        .min-temp {
+            color: var(--text-secondary);
+        }
+
+        /* Почасовой прогноз */
+        .hourly-forecast {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .hourly-items {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding-bottom: 10px;
+        }
+
+        .hourly-item {
+            min-width: 80px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .hourly-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .hour-time {
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .hourly-icon {
+            width: 40px;
+            height: 40px;
+            margin: 5px 0;
+        }
+
+        .hour-temp {
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        /* Дополнительная информация */
+        .additional-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .info-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-card-title i {
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .sun-times {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sun-time {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sun-icon {
+            font-size: 24px;
+            color: var(--warning-color);
+        }
+
+        .sunset-icon {
+            color: var(--secondary-color);
+        }
+
+        .sun-time-value {
+            font-weight: 600;
+        }
+
+        .sun-time-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .air-quality-index {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .aqi-value {
+            font-size: 32px;
+            font-weight: 700;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .aqi-good {
+            background: var(--success-color);
+        }
+
+        .aqi-moderate {
+            background: var(--warning-color);
+            color: #000;
+        }
+
+        .aqi-unhealthy {
+            background: #FF9800;
+        }
+
+        .aqi-very-unhealthy {
+            background: #F44336;
+        }
+
+        .aqi-hazardous {
+            background: #9C27B0;
+        }
+
+        .aqi-description {
+            flex: 1;
+        }
+
+        .aqi-category {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .aqi-message {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .pollutant {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .pollutant:last-child {
+            border-bottom: none;
+        }
+
+        .pollutant-name {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .pollutant-value {
+            font-weight: 600;
+        }
+
+        .map-container {
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .wind-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .wind-direction {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .wind-arrow {
+            font-size: 24px;
+            color: var(--primary-color);
+            transition: transform 0.5s ease;
+        }
+
+        .wind-deg {
+            position: absolute;
+            bottom: 5px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .wind-details {
+            flex: 1;
+        }
+
+        .wind-speed {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .wind-gust {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .humidity-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .humidity-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .visibility-value {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 10px 0 5px;
+        }
+
+        .visibility-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .pressure-value {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 10px 0 5px;
+        }
+
+        .pressure-trend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .pressure-rising {
+            color: var(--error-color);
+        }
+
+        .pressure-falling {
+            color: var(--success-color);
+        }
+
+        .pressure-stable {
+            color: var(--text-secondary);
+        }
+
+        /* Состояние загрузки */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex: 1;
+            padding: 40px 0;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(108, 99, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Сообщение об ошибке */
+        .error-message {
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid var(--error-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .error-icon {
+            font-size: 40px;
+            color: var(--error-color);
+        }
+
+        .error-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--error-color);
+        }
+
+        .error-text {
+            color: var(--text-secondary);
+            max-width: 400px;
+        }
+
+        .retry-btn {
+            background: var(--error-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .retry-btn:hover {
+            background: #ff3333;
+            transform: translateY(-2px);
+        }
+
+        /* Начальный экран */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex: 1;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .welcome-icon {
+            font-size: 80px;
+            color: var(--primary-color);
+            opacity: 0.8;
+        }
+
+        .welcome-title {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .welcome-text {
+            color: var(--text-secondary);
+            max-width: 500px;
+        }
+
+        /* Адаптивные стили */
+        @media (max-width: 768px) {
+            .current-temp {
+                font-size: 56px;
+            }
+            
+            .temp-unit {
+                font-size: 24px;
+            }
+            
+            .weather-icon {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .current-weather-main {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .weather-details {
+                text-align: left;
+                width: 100%;
+            }
+            
+            .weather-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .additional-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .settings-btn {
+                position: absolute;
+                right: 0;
+                top: 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .current-weather, .daily-forecast, .hourly-forecast, .info-card {
+                padding: 20px;
+            }
+            
+            .city-name {
+                font-size: 24px;
+            }
+            
+            .current-temp {
+                font-size: 48px;
+            }
+            
+            .weather-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .daily-item {
+                min-width: 100px;
+                padding: 12px;
+            }
+            
+            .hourly-item {
+                min-width: 70px;
+                padding: 12px;
+            }
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.3s;
+        }
+
+        .delay-4 {
+            animation-delay: 0.4s;
+        }
+
+        /* Темизация (для будущего расширения) */
+        .theme-light {
+            --text-primary: #121212;
+            --text-secondary: #4E4E4E;
+            --bg-primary: #F5F5F5;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #EAEAEA;
+            --card-bg: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header fade-in">
+            <div class="logo">
+                <i class="fas fa-cloud-moon logo-icon"></i>
+                <span class="logo-text">ViewTheWeatherBot</span>
+            </div>
+            <button class="settings-btn" aria-label="Settings" id="settingsBtn">
+                <i class="fas fa-cog"></i>
+            </button>
+        </header>
+
+        <div class="search-container fade-in delay-1">
+            <input type="text" class="search-input" id="searchInput" placeholder="Введите город или место..." autocomplete="off">
+            <button class="search-btn" id="searchBtn">
+                <i class="fas fa-search"></i>
+                <span>Поиск</span>
+            </button>
+        </div>
+
+        <main class="main-content" id="mainContent">
+            <!-- Контент будет загружаться динамически -->
+            <div class="welcome-screen fade-in delay-2">
+                <i class="fas fa-cloud-sun welcome-icon"></i>
+                <div>
+                    <h1 class="welcome-title">Погода</h1>
+                    <p class="welcome-text">Введите название города в поисковой строке, чтобы получить актуальный прогноз погоды с детальной информацией и аналитикой.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Элементы DOM
+            const searchInput = document.getElementById('searchInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const mainContent = document.getElementById('mainContent');
+            const settingsBtn = document.getElementById('settingsBtn');
+            
+            // API ключ
+            const apiKey = '51a0172b67a6ffc67d92342872809b7f';
+            
+            // Текущие единицы измерения (можно расширить для настроек)
+            let units = 'metric'; // metric или imperial
+            let lang = 'ru'; // Язык интерфейса
+            
+            // История поиска
+            let searchHistory = JSON.parse(localStorage.getItem('weatherSearchHistory')) || [];
+            
+            // Инициализация приложения
+            initApp();
+            
+            function initApp() {
+                // Проверяем, есть ли последний поиск в истории
+                if (searchHistory.length > 0) {
+                    const lastSearch = searchHistory[searchHistory.length - 1];
+                    searchInput.value = lastSearch.query;
+                    fetchWeather(lastSearch.query);
+                }
+                
+                // Устанавливаем обработчики событий
+                setupEventListeners();
+            }
+            
+            function setupEventListeners() {
+                // Поиск по кнопке
+                searchBtn.addEventListener('click', () => {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        fetchWeather(query);
+                    }
+                });
+                
+                // Поиск по Enter
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const query = searchInput.value.trim();
+                        if (query) {
+                            fetchWeather(query);
+                        }
+                    }
+                });
+                
+                // Настройки (можно расширить)
+                settingsBtn.addEventListener('click', () => {
+                    alert('Настройки будут добавлены в будущих обновлениях!');
+                });
+            }
+            
+            // Основная функция получения данных о погоде
+            async function fetchWeather(query) {
+        try {
+            showLoading();
+            
+            // Заранее получаем координаты нужного города (в данном случае, через гео API только один раз)
+            const geoData = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=1&appid=${apiKey}`)
+                .then(res => res.json());
+            
+            if (!geoData || geoData.length === 0) {
+                throw new Error('Город не найден. Проверьте название и попробуйте снова.');
+            }
+            
+            const { lat, lon, name, country, state } = geoData[0];
+            const locationName = state ? `${name}, ${state}, ${country}` : `${name}, ${country}`;
+
+            // Параллельные запросы
+            const [weatherData, forecastData, airPollutionData] = await Promise.all([
+                fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${units}&lang=${lang}&appid=${apiKey}`).then(r => r.json()),
+                fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${units}&lang=${lang}&appid=${apiKey}`).then(r => r.json()),
+                fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`).then(r => r.json())
+            ]);
+            
+            processWeatherData(locationName, weatherData, forecastData, airPollutionData);
+            addToSearchHistory(query, locationName);
+            
+        } catch (error) {
+            console.error('Ошибка при получении данных о погоде:', error);
+            showError(error.message);
+        }
+    }
+                    
+                    const { lat, lon, name, country, state } = geoData[0];
+                    const locationName = state ? `${name}, ${state}, ${country}` : `${name}, ${country}`;
+                    
+                    // Затем получаем текущую погоду и прогноз
+                    const weatherResponse = await fetch(
+                        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=${units}&lang=${lang}&appid=${apiKey}`
+                    );
+                    
+                    const forecastResponse = await fetch(
+                        `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${units}&lang=${lang}&appid=${apiKey}`
+                    );
+                    
+                    const airPollutionResponse = await fetch(
+                        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`
+                    );
+                    
+                    const [weatherData, forecastData, airPollutionData] = await Promise.all([
+                        weatherResponse.json(),
+                        forecastResponse.json(),
+                        airPollutionResponse.json()
+                    ]);
+                    
+                    // Обрабатываем все данные
+                    processWeatherData(locationName, weatherData, forecastData, airPollutionData);
+                    
+                    // Добавляем в историю поиска
+                    addToSearchHistory(query, locationName);
+                    
+                } catch (error) {
+                    console.error('Ошибка при получении данных о погоде:', error);
+                    showError(error.message);
+                }
+            }
+            
+            // Обработка и отображение данных о погоде
+            function processWeatherData(locationName, weatherData, forecastData, airPollutionData) {
+                // Текущая дата и время
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                const currentDateTime = now.toLocaleDateString(lang, options);
+                
+                // Текущая погода
+                const currentTemp = Math.round(weatherData.main.temp);
+                const feelsLike = Math.round(weatherData.main.feels_like);
+                const weatherDescription = weatherData.weather[0].description;
+                const weatherIconCode = weatherData.weather[0].icon;
+                const weatherIconUrl = `https://openweathermap.org/img/wn/${weatherIconCode}@2x.png`;
+                
+                // Детали погоды
+                const humidity = weatherData.main.humidity;
+                const pressure = weatherData.main.pressure;
+                const windSpeed = weatherData.wind.speed;
+                const windDeg = weatherData.wind.deg;
+                const windGust = weatherData.wind.gust || 0;
+                const visibility = weatherData.visibility / 1000; // в км
+                const cloudiness = weatherData.clouds.all;
+                const sunrise = new Date(weatherData.sys.sunrise * 1000);
+                const sunset = new Date(weatherData.sys.sunset * 1000);
+                
+                // Качество воздуха
+                const aqi = airPollutionData.list[0].main.aqi;
+                const pollutants = airPollutionData.list[0].components;
+                
+                // Форматирование времени
+                const timeOptions = { hour: '2-digit', minute: '2-digit' };
+                const sunriseTime = sunrise.toLocaleTimeString(lang, timeOptions);
+                const sunsetTime = sunset.toLocaleTimeString(lang, timeOptions);
+                
+                // Форматирование давления
+                const pressureInMmHg = Math.round(pressure * 0.750062);
+                
+                // Форматирование видимости
+                let visibilityDescription = '';
+                if (visibility >= 10) {
+                    visibilityDescription = 'Отличная видимость';
+                } else if (visibility >= 5) {
+                    visibilityDescription = 'Хорошая видимость';
+                } else if (visibility >= 1) {
+                    visibilityDescription = 'Умеренная видимость';
+                } else {
+                    visibilityDescription = 'Плохая видимость';
+                }
+                
+                // Описание качества воздуха
+                const aqiInfo = getAqiInfo(aqi);
+                
+                // Почасовой прогноз (первые 12 часов)
+                const hourlyForecast = forecastData.list.slice(0, 12).map(item => {
+                    const time = new Date(item.dt * 1000);
+                    return {
+                        time: time.toLocaleTimeString(lang, { hour: '2-digit' }),
+                        temp: Math.round(item.main.temp),
+                        icon: item.weather[0].icon,
+                        description: item.weather[0].description
+                    };
+                });
+                
+                // Прогноз на 5 дней (один прогноз в день)
+                const dailyForecast = [];
+                const daysOfWeek = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+                
+                // Группируем по дням и берем прогноз на 12:00 каждого дня
+                const groupedByDay = {};
+                forecastData.list.forEach(item => {
+                    const date = new Date(item.dt * 1000);
+                    const dayKey = date.toLocaleDateString();
+                    
+                    if (!groupedByDay[dayKey]) {
+                        groupedByDay[dayKey] = [];
+                    }
+                    
+                    groupedByDay[dayKey].push(item);
+                });
+                
+                // Для каждого дня находим дневной и ночной прогноз
+                Object.keys(groupedByDay).slice(0, 5).forEach(dayKey => {
+                    const dayItems = groupedByDay[dayKey];
+                    const dayDate = new Date(dayItems[0].dt * 1000);
+                    const dayName = daysOfWeek[dayDate.getDay()];
+                    
+                    // Находим прогноз на 12:00 (день)
+                    const dayForecast = dayItems.find(item => {
+                        const time = new Date(item.dt * 1000).getHours();
+                        return time >= 12 && time < 15;
+                    }) || dayItems[Math.floor(dayItems.length / 2)];
+                    
+                    // Находим минимальную и максимальную температуру за день
+                    let minTemp = dayItems[0].main.temp_min;
+                    let maxTemp = dayItems[0].main.temp_max;
+                    
+                    dayItems.forEach(item => {
+                        if (item.main.temp_min < minTemp) minTemp = item.main.temp_min;
+                        if (item.main.temp_max > maxTemp) maxTemp = item.main.temp_max;
+                    });
+                    
+                    dailyForecast.push({
+                        day: dayName,
+                        date: dayDate.toLocaleDateString(lang, { month: 'short', day: 'numeric' }),
+                        icon: dayForecast.weather[0].icon,
+                        description: dayForecast.weather[0].description,
+                        maxTemp: Math.round(maxTemp),
+                        minTemp: Math.round(minTemp)
+                    });
+                });
+                
+                // Генерируем HTML для отображения
+                const weatherHTML = `
+                    <div class="current-weather fade-in">
+                        <div class="location-info">
+                            <div>
+                                <h1 class="city-name">${locationName}</h1>
+                                <p class="date-time">${currentDateTime}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="current-weather-main">
+                            <div class="weather-icon-temp">
+                                <img src="${weatherIconUrl}" alt="${weatherDescription}" class="weather-icon">
+                                <span class="current-temp">${currentTemp}<span class="temp-unit">°${units === 'metric' ? 'C' : 'F'}</span></span>
+                            </div>
+                            
+                            <div class="weather-details">
+                                <p class="weather-description">${weatherDescription}</p>
+                                <p class="feels-like">Ощущается как ${feelsLike}°</p>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-stats">
+                            <div class="weather-stat">
+                                <i class="fas fa-wind stat-icon"></i>
+                                <span class="stat-value">${windSpeed} ${units === 'metric' ? 'м/с' : 'миль/ч'}</span>
+                                <span class="stat-label">Ветер</span>
+                            </div>
+                            
+                            <div class="weather-stat">
+                                <i class="fas fa-tint stat-icon"></i>
+                                <span class="stat-value">${humidity}%</span>
+                                <span class="stat-label">Влажность</span>
+                            </div>
+                            
+                            <div class="weather-stat">
+                                <i class="fas fa-cloud stat-icon"></i>
+                                <span class="stat-value">${cloudiness}%</span>
+                                <span class="stat-label">Облачность</span>
+                            </div>
+                            
+                            <div class="weather-stat">
+                                <i class="fas fa-eye stat-icon"></i>
+                                <span class="stat-value">${visibility} км</span>
+                                <span class="stat-label">Видимость</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="hourly-forecast fade-in delay-1">
+                        <h2 class="section-title"><i class="fas fa-clock"></i> Почасовой прогноз</h2>
+                        <div class="hourly-items">
+                            ${hourlyForecast.map(hour => `
+                                <div class="hourly-item">
+                                    <p class="hour-time">${hour.time}</p>
+                                    <img src="https://openweathermap.org/img/wn/${hour.icon}.png" alt="${hour.description}" class="hourly-icon">
+                                    <p class="hour-temp">${hour.temp}°</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="daily-forecast fade-in delay-2">
+                        <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Прогноз на 5 дней</h2>
+                        <div class="daily-items">
+                            ${dailyForecast.map(day => `
+                                <div class="daily-item">
+                                    <p class="day-name">${day.day}</p>
+                                    <p class="day-date">${day.date}</p>
+                                    <img src="https://openweathermap.org/img/wn/${day.icon}.png" alt="${day.description}" class="daily-icon">
+                                    <div class="daily-temp">
+                                        <span class="max-temp">${day.maxTemp}°</span>
+                                        <span class="min-temp">${day.minTemp}°</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="additional-info">
+                        <div class="info-card fade-in delay-3">
+                            <h3 class="info-card-title"><i class="fas fa-sun"></i> Солнечный свет</h3>
+                            <div class="sun-times">
+                                <div class="sun-time">
+                                    <i class="fas fa-sunrise sun-icon"></i>
+                                    <span class="sun-time-value">${sunriseTime}</span>
+                                    <span class="sun-time-label">Восход</span>
+                                </div>
+                                <div class="sun-time">
+                                    <i class="fas fa-sunset sun-icon sunset-icon"></i>
+                                    <span class="sun-time-value">${sunsetTime}</span>
+                                    <span class="sun-time-label">Закат</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card fade-in delay-3">
+                            <h3 class="info-card-title"><i class="fas fa-wind"></i> Ветер</h3>
+                            <div class="wind-info">
+                                <div class="wind-direction">
+                                    <i class="fas fa-location-arrow wind-arrow" style="transform: rotate(${windDeg}deg)"></i>
+                                    <span class="wind-deg">${windDeg}°</span>
+                                </div>
+                                <div class="wind-details">
+                                    <p class="wind-speed">${windSpeed} ${units === 'metric' ? 'м/с' : 'миль/ч'}</p>
+                                    <p class="wind-gust">Порывы до ${windGust} ${units === 'metric' ? 'м/с' : 'миль/ч'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card fade-in delay-4">
+                            <h3 class="info-card-title"><i class="fas fa-leaf"></i> Качество воздуха</h3>
+                            <div class="air-quality-index">
+                                <div class="aqi-value ${aqiInfo.class}">${aqi}</div>
+                                <div class="aqi-description">
+                                    <p class="aqi-category">${aqiInfo.category}</p>
+                                    <p class="aqi-message">${aqiInfo.message}</p>
+                                </div>
+                            </div>
+                            <div class="pollutants-list">
+                                <div class="pollutant">
+                                    <span class="pollutant-name">PM2.5</span>
+                                    <span class="pollutant-value">${pollutants.pm2_5.toFixed(1)} µg/m³</span>
+                                </div>
+                                <div class="pollutant">
+                                    <span class="pollutant-name">PM10</span>
+                                    <span class="pollutant-value">${pollutants.pm10.toFixed(1)} µg/m³</span>
+                                </div>
+                                <div class="pollutant">
+                                    <span class="pollutant-name">NO₂</span>
+                                    <span class="pollutant-value">${pollutants.no2.toFixed(1)} µg/m³</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card fade-in delay-4">
+                            <h3 class="info-card-title"><i class="fas fa-tachometer-alt"></i> Давление</h3>
+                            <p class="pressure-value">${pressureInMmHg} мм рт. ст.</p>
+                            <p class="pressure-trend">
+                                <i class="fas fa-arrow-${pressure > 1013 ? 'up pressure-rising' : pressure < 1013 ? 'down pressure-falling' : 'right pressure-stable'}"></i>
+                                ${pressure > 1013 ? 'Высокое' : pressure < 1013 ? 'Низкое' : 'Нормальное'} давление
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                // Отображаем сгенерированный HTML
+                mainContent.innerHTML = weatherHTML;
+                
+                // Добавляем карту (используем OpenStreetMap)
+                addMapToUI(weatherData.coord.lat, weatherData.coord.lon);
+            }
+            
+            // Добавление карты
+            function addMapToUI(lat, lon) {
+                const mapHTML = `
+                    <div class="info-card">
+                        <h3 class="info-card-title"><i class="fas fa-map-marked-alt"></i> Карта местоположения</h3>
+                        <div class="map-container">
+                            <iframe 
+                                src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.1}%2C${lat-0.1}%2C${lon+0.1}%2C${lat+0.1}&amp;layer=mapnik&amp;marker=${lat}%2C${lon}" 
+                                scrolling="no">
+                            </iframe>
+                        </div>
+                    </div>
+                `;
+                
+                // Добавляем карту в additional-info
+                const additionalInfo = document.querySelector('.additional-info');
+                if (additionalInfo) {
+                    const mapCard = document.createElement('div');
+                    mapCard.innerHTML = mapHTML;
+                    mapCard.classList.add('fade-in', 'delay-4');
+                    additionalInfo.appendChild(mapCard);
+                }
+            }
+            
+            // Информация о качестве воздуха
+            function getAqiInfo(aqi) {
+                switch(aqi) {
+                    case 1:
+                        return {
+                            class: 'aqi-good',
+                            category: 'Хорошее',
+                            message: 'Качество воздуха удовлетворительное, риск для здоровья отсутствует или незначителен.'
+                        };
+                    case 2:
+                        return {
+                            class: 'aqi-moderate',
+                            category: 'Умеренное',
+                            message: 'Качество воздуха приемлемое, однако некоторые загрязнители могут представлять умеренную угрозу для здоровья.'
+                        };
+                    case 3:
+                        return {
+                            class: 'aqi-unhealthy',
+                            category: 'Нездоровое',
+                            message: 'Члены чувствительных групп могут испытывать проблемы со здоровьем.'
+                        };
+                    case 4:
+                        return {
+                            class: 'aqi-very-unhealthy',
+                            category: 'Очень нездоровое',
+                            message: 'Воздействие на всех может вызвать серьезные последствия для здоровья.'
+                        };
+                    case 5:
+                        return {
+                            class: 'aqi-hazardous',
+                            category: 'Опасное',
+                            message: 'Чрезвычайная ситуация, все население может пострадать.'
+                        };
+                    default:
+                        return {
+                            class: '',
+                            category: 'Неизвестно',
+                            message: 'Данные о качестве воздуха недоступны.'
+                        };
+                }
+            }
+            
+            // Добавление в историю поиска
+            function addToSearchHistory(query, locationName) {
+                // Проверяем, нет ли уже такого запроса в истории
+                const existingIndex = searchHistory.findIndex(item => item.query.toLowerCase() === query.toLowerCase());
+                
+                if (existingIndex !== -1) {
+                    // Удаляем старую запись, если она есть
+                    searchHistory.splice(existingIndex, 1);
+                }
+                
+                // Добавляем новый запрос в начало истории
+                searchHistory.push({
+                    query,
+                    locationName,
+                    timestamp: new Date().getTime()
+                });
+                
+                // Сохраняем в localStorage (ограничиваем до 10 записей)
+                if (searchHistory.length > 10) {
+                    searchHistory.shift();
+                }
+                
+                localStorage.setItem('weatherSearchHistory', JSON.stringify(searchHistory));
+            }
+            
+            // Показать состояние загрузки
+            function showLoading() {
+                mainContent.innerHTML = `
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">Загрузка данных о погоде...</p>
+                    </div>
+                `;
+            }
+            
+            // Показать ошибку
+            function showError(message) {
+                mainContent.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle error-icon"></i>
+                        <h2 class="error-title">Ошибка</h2>
+                        <p class="error-text">${message}</p>
+                        <button class="retry-btn" id="retryBtn">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Попробовать снова</span>
+                        </button>
+                    </div>
+                `;
+                
+                // Обработчик для кнопки повтора
+                document.getElementById('retryBtn').addEventListener('click', () => {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        fetchWeather(query);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
